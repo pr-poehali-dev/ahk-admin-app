@@ -68,13 +68,32 @@ const templateColorMap: Record<string, { border: string; tag: string }> = {
   purple: { border: "border-purple-500/40 hover:border-purple-500/70 hover:bg-purple-500/5", tag: "tag-cyan" },
 };
 
+function useLocalStorage<T>(key: string, initial: T) {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : initial;
+    } catch {
+      return initial;
+    }
+  });
+  const set = (v: T | ((prev: T) => T)) => {
+    setValue((prev) => {
+      const next = typeof v === "function" ? (v as (p: T) => T)(prev) : v;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch (e) { /* ignore */ }
+      return next;
+    });
+  };
+  return [value, set] as const;
+}
+
 export default function Index() {
   const [section, setSection] = useState<Section>("home");
-  const [commands, setCommands] = useState<Command[]>(defaultCommands);
-  const [templates, setTemplates] = useState<PunishmentTemplate[]>(defaultTemplates);
-  const [logs, setLogs] = useState<PunishmentLog[]>([]);
-  const [adminName, setAdminName] = useState("Admin");
-  const [serverName, setServerName] = useState("Мой сервер");
+  const [commands, setCommands] = useLocalStorage<Command[]>("ahk_commands", defaultCommands);
+  const [templates, setTemplates] = useLocalStorage<PunishmentTemplate[]>("ahk_templates", defaultTemplates);
+  const [logs, setLogs] = useLocalStorage<PunishmentLog[]>("ahk_logs", []);
+  const [adminName, setAdminName] = useLocalStorage<string>("ahk_admin", "Admin");
+  const [serverName, setServerName] = useLocalStorage<string>("ahk_server", "Мой сервер");
 
   const [punishForm, setPunishForm] = useState({
     static: "",
