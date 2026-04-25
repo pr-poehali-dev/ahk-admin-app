@@ -189,8 +189,8 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background grid-bg font-rubik flex">
-      {/* Sidebar */}
-      <aside className="w-64 min-h-screen flex flex-col border-r border-border bg-[hsl(220,22%,7%)] relative z-10">
+      {/* Sidebar — desktop only */}
+      <aside className="hidden md:flex w-64 min-h-screen flex-col border-r border-border bg-[hsl(220,22%,7%)] relative z-10">
         <div className="p-6 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-[hsla(180,100%,50%,0.1)] border border-[hsla(180,100%,50%,0.4)] flex items-center justify-center">
@@ -237,19 +237,26 @@ export default function Index() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-auto">
-        <header className="h-14 border-b border-border flex items-center px-6 gap-3 bg-[hsla(220,20%,6%,0.8)] backdrop-blur-sm sticky top-0 z-10">
-          <Icon name="ChevronRight" size={14} className="text-muted-foreground" />
-          <span className="text-muted-foreground text-sm">
+      <main className="flex-1 overflow-auto flex flex-col">
+        <header className="h-14 border-b border-border flex items-center px-4 md:px-6 gap-3 bg-[hsla(220,20%,6%,0.8)] backdrop-blur-sm sticky top-0 z-10">
+          {/* Mobile: app logo */}
+          <div className="flex md:hidden items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[hsla(180,100%,50%,0.1)] border border-[hsla(180,100%,50%,0.4)] flex items-center justify-center">
+              <Icon name="Shield" size={14} className="neon-text-cyan" />
+            </div>
+            <span className="font-oswald text-sm font-bold neon-text-cyan tracking-widest uppercase">AHK Panel</span>
+          </div>
+          <Icon name="ChevronRight" size={14} className="text-muted-foreground hidden md:block" />
+          <span className="text-muted-foreground text-sm hidden md:block">
             {navItems.find((n) => n.id === section)?.label}
           </span>
           <div className="ml-auto flex items-center gap-2">
             <div className="tag-green">ONLINE</div>
-            <span className="text-xs text-muted-foreground">{serverName}</span>
+            <span className="text-xs text-muted-foreground hidden sm:block">{serverName}</span>
           </div>
         </header>
 
-        <div className="p-6 animate-fade-in">
+        <div className="p-4 md:p-6 animate-fade-in pb-24 md:pb-6">
 
           {/* ── HOME ── */}
           {section === "home" && (
@@ -628,6 +635,24 @@ export default function Index() {
           )}
 
         </div>
+
+        {/* Bottom Nav — mobile only */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-[hsl(220,22%,7%)] flex">
+          {navItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => setSection(item.id)}
+              className={`flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-all duration-200 text-[10px] font-medium uppercase tracking-widest
+                ${section === item.id ? "neon-text-cyan" : "text-muted-foreground"}`}
+            >
+              <Icon name={item.icon} size={20} />
+              <span>{item.label}</span>
+              {section === item.id && (
+                <div className="absolute bottom-0 w-8 h-0.5 bg-[hsl(var(--neon-cyan))] rounded-t-full" />
+              )}
+            </button>
+          ))}
+        </nav>
       </main>
     </div>
   );
