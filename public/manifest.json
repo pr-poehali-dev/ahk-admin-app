@@ -3,13 +3,21 @@
   "short_name": "AHK Panel",
   "description": "Инструмент администратора игрового сервера",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0d12",
   "theme_color": "#00ffff",
   "orientation": "any",
+  "lang": "ru",
   "icons": [
     {
-      "src": "https://cdn.poehali.dev/projects/13c7331e-ff65-49ba-838a-ed5a9d640faf/files/a920811c-1a18-4829-b283-4a04c5a01b44.jpg",
+      "src": "https://cdn.poehali.dev/projects/13c7331e-ff65-49ba-838a-ed5a9d640faf/files/f9f80518-a594-4bdc-98e5-bd86a75e2f46.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://cdn.poehali.dev/projects/13c7331e-ff65-49ba-838a-ed5a9d640faf/files/f9f80518-a594-4bdc-98e5-bd86a75e2f46.jpg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any maskable"
