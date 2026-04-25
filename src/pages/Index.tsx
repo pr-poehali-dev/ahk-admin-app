@@ -77,7 +77,6 @@ export default function Index() {
   const [serverName, setServerName] = useState("Мой сервер");
 
   const [punishForm, setPunishForm] = useState({
-    player: "",
     static: "",
     duration: "",
     ticketNo: "",
@@ -86,6 +85,7 @@ export default function Index() {
   });
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [copied, setCopied] = useState(false);
+  const [autoInserted, setAutoInserted] = useState(false);
 
   const [newCmd, setNewCmd] = useState({ name: "", command: "", description: "", category: "ban" as Command["category"] });
   const [newTemplate, setNewTemplate] = useState({ name: "", commandId: "", defaultDuration: "", color: "cyan" as PunishmentTemplate["color"] });
@@ -95,14 +95,46 @@ export default function Index() {
 
   const getCommandById = (id: string) => commands.find((c) => c.id === id);
 
+  const buildCommand = (form = punishForm) => {
+    const cmd = getCommandById(form.commandId);
+    if (!cmd || !form.static) return "";
+    const parts = [`/${cmd.command}`, form.static];
+    if (form.duration) parts.push(form.duration);
+    if (form.reason) parts.push(form.reason);
+    if (form.ticketNo) parts.push(`#${form.ticketNo}`);
+    return parts.join(" ");
+  };
+
   const handleGenerate = () => {
-    const cmd = getCommandById(punishForm.commandId);
-    if (!cmd || !punishForm.player) return;
-    const parts = [`/${cmd.command}`, punishForm.static || punishForm.player];
-    if (punishForm.duration) parts.push(punishForm.duration);
-    if (punishForm.reason) parts.push(punishForm.reason);
-    if (punishForm.ticketNo) parts.push(`#${punishForm.ticketNo}`);
-    setGeneratedCommand(parts.join(" "));
+    const result = buildCommand();
+    if (!result) return;
+    setGeneratedCommand(result);
+  };
+
+  const handleAutoInsert = async () => {
+    const cmd = generatedCommand || buildCommand();
+    if (!cmd) return;
+    try {
+      await navigator.clipboard.writeText(cmd);
+      setGeneratedCommand(cmd);
+      setAutoInserted(true);
+      setTimeout(() => setAutoInserted(false), 3000);
+      if (punishForm.static) {
+        const log: PunishmentLog = {
+          id: Date.now().toString(),
+          player: punishForm.static,
+          static: punishForm.static,
+          duration: punishForm.duration,
+          ticketNo: punishForm.ticketNo,
+          command: cmd,
+          timestamp: new Date().toLocaleTimeString("ru-RU"),
+          admin: adminName,
+        };
+        setLogs((prev) => [log, ...prev.slice(0, 19)]);
+      }
+    } catch {
+      // fallback
+    }
   };
 
   const handleApplyTemplate = (template: PunishmentTemplate) => {
@@ -119,10 +151,10 @@ export default function Index() {
     navigator.clipboard.writeText(generatedCommand);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-    if (punishForm.player) {
+    if (punishForm.static) {
       const log: PunishmentLog = {
         id: Date.now().toString(),
-        player: punishForm.player,
+        player: punishForm.static,
         static: punishForm.static,
         duration: punishForm.duration,
         ticketNo: punishForm.ticketNo,
@@ -366,14 +398,17 @@ export default function Index() {
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Ник игрока *</label>
-                    <input className="input-neon rounded-lg px-3 py-2.5 text-sm w-full" placeholder="PlayerName"
-                      value={punishForm.player} onChange={(e) => setPunishForm((p) => ({ ...p, player: e.target.value }))} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Статик (ID / IP)</label>
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Статик (ID / IP) *</label>
                     <input className="input-neon rounded-lg px-3 py-2.5 text-sm w-full" placeholder="12345 / 127.0.0.1"
                       value={punishForm.static} onChange={(e) => setPunishForm((p) => ({ ...p, static: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Команда *</label>
+                    <select className="input-neon rounded-lg px-3 py-2.5 text-sm w-full"
+                      value={punishForm.commandId} onChange={(e) => setPunishForm((p) => ({ ...p, commandId: e.target.value }))}>
+                      <option value="">Выберите команду</option>
+                      {commands.map((c) => <option key={c.id} value={c.id}>/{c.command} — {c.name}</option>)}
+                    </select>
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Время наказания</label>
@@ -385,28 +420,44 @@ export default function Index() {
                     <input className="input-neon rounded-lg px-3 py-2.5 text-sm w-full" placeholder="1234"
                       value={punishForm.ticketNo} onChange={(e) => setPunishForm((p) => ({ ...p, ticketNo: e.target.value }))} />
                   </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Команда *</label>
-                    <select className="input-neon rounded-lg px-3 py-2.5 text-sm w-full"
-                      value={punishForm.commandId} onChange={(e) => setPunishForm((p) => ({ ...p, commandId: e.target.value }))}>
-                      <option value="">Выберите команду</option>
-                      {commands.map((c) => <option key={c.id} value={c.id}>/{c.command} — {c.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="space-y-1.5">
+                  <div className="sm:col-span-2 space-y-1.5">
                     <label className="text-[10px] text-muted-foreground uppercase tracking-widest">Причина</label>
                     <input className="input-neon rounded-lg px-3 py-2.5 text-sm w-full" placeholder="Причина наказания"
                       value={punishForm.reason} onChange={(e) => setPunishForm((p) => ({ ...p, reason: e.target.value }))} />
                   </div>
                 </div>
-                <button onClick={handleGenerate}
-                  className="mt-5 neon-btn-red px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
-                  <Icon name="Zap" size={15} />
-                  Сгенерировать команду
-                </button>
+
+                {/* Preview live */}
+                {(punishForm.static && punishForm.commandId) && (
+                  <div className="mt-4 command-output text-sm animate-fade-in">
+                    {buildCommand()}
+                  </div>
+                )}
+
+                <div className="mt-5 flex gap-3 flex-wrap">
+                  <button onClick={handleAutoInsert}
+                    className="neon-btn-cyan px-6 py-2.5 rounded-lg text-sm font-semibold flex items-center gap-2">
+                    <Icon name={autoInserted ? "Check" : "Gamepad2"} size={15} />
+                    {autoInserted ? "Скопировано! Вставьте в игру (Ctrl+V)" : "Вставить в игру"}
+                  </button>
+                  <button onClick={handleGenerate}
+                    className="px-5 py-2.5 rounded-lg text-sm font-medium border border-border text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2">
+                    <Icon name="Zap" size={14} />
+                    Показать команду
+                  </button>
+                </div>
+
+                {autoInserted && (
+                  <div className="mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-[hsla(130,100%,45%,0.08)] border border-[hsla(130,100%,45%,0.3)] animate-fade-in">
+                    <Icon name="Info" size={13} className="text-green-400 shrink-0 mt-0.5" />
+                    <p className="text-xs text-green-400">
+                      Команда скопирована. Переключитесь в игру → откройте чат → нажмите <kbd className="bg-[hsla(0,0%,100%,0.1)] px-1.5 py-0.5 rounded text-[10px] font-mono">Ctrl+V</kbd> → <kbd className="bg-[hsla(0,0%,100%,0.1)] px-1.5 py-0.5 rounded text-[10px] font-mono">Enter</kbd>
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {/* Output */}
+              {/* Output (когда нажато "Показать") */}
               {generatedCommand && (
                 <div className="card-dark rounded-xl p-5 animate-scale-in border neon-border-cyan">
                   <div className="flex items-center justify-between mb-3">
@@ -419,10 +470,6 @@ export default function Index() {
                     </button>
                   </div>
                   <div className="command-output text-base select-all">{generatedCommand}</div>
-                  <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                    <Icon name="Info" size={11} />
-                    Нажмите "Копировать" — команда сохранится в буфер обмена
-                  </p>
                 </div>
               )}
 
